@@ -2,6 +2,7 @@
 
 int main() {
   FILE *fp = fopen("input", "r");
+  int pos = 0;
   int floor = 0;
   int c;
 
@@ -10,7 +11,11 @@ int main() {
     case '(': floor++; break;
     case ')': floor--; break;
     }
-  }
 
-  printf("Floor: %d\n", floor);
+    pos++;
+
+    if(floor == -1) {
+      printf("Char at possition: %d\n", pos); break;
+    }
+  }
 }
