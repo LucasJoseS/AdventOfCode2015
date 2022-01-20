@@ -10,11 +10,17 @@ fn main() {
     secret.remove(secret.len()-1);
 
     let mut decimal = 0;
+    let mut already_found = false;
     loop {
         let test = format!("{}{}", secret, decimal);
         let message = md5::compute(test);
 
-        if format!("{:?}", message).starts_with("00000") {
+        if format!("{:?}", message).starts_with("00000") && !already_found {
+            print!("{}, {} -> {:?}\n", secret, decimal, message);
+            already_found = true;
+        }
+
+        if format!("{:?}", message).starts_with("000000") {
             print!("{}, {} -> {:?}\n", secret, decimal, message);
             break;
         }
