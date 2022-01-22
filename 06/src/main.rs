@@ -25,7 +25,7 @@ impl Coordinate {
 
 #[derive(Debug)]
 struct House {
-    lit: HashMap<Coordinate, bool>,
+    lit: HashMap<Coordinate, u32>,
 }
 
 impl House {
@@ -34,39 +34,56 @@ impl House {
     }
 
     fn turn_on(&mut self, start: Coordinate, end: Coordinate) {
-        self.board(start, end, &|_| { Some(true) });
-    }
-
-    fn turn_off(&mut self, start: Coordinate, end: Coordinate) {
-        self.board(start, end, &|_| { None });
-    }
-
-    fn toggle(&mut self, start: Coordinate, end: Coordinate) {
-        self.board(start, end, &|value: Option<&bool>| {
-            match value {
-                Some(_) => None,
-                None => Some(true),
+        self.board(start, end, &|oldv: Option<&u32>| {
+            match oldv {
+                None => 1,
+                Some(oldv) => oldv + 1
             }
         });
     }
 
-    fn board(&mut self, start: Coordinate, end: Coordinate, value: &dyn Fn(Option<&bool>) -> Option<bool>) {
+    fn turn_off(&mut self, start: Coordinate, end: Coordinate) {
+        self.board(start, end, &|oldv: Option<&u32>| {
+            match oldv {
+                None => 0,
+                Some(oldv) => if *oldv == 0 {0} else {oldv - 1}
+            }
+        });                
+    }
+
+    fn toggle(&mut self, start: Coordinate, end: Coordinate) {
+        self.board(start, end, &|oldv: Option<&u32>| {
+            match oldv {
+                None => 2,
+                Some(oldv) => oldv + 2
+            }
+        });        
+    }
+
+    fn board(&mut self, start: Coordinate, end: Coordinate, value: &dyn Fn(Option<&u32>) -> u32) {
         for y in start.y..=end.y {
             self.line(Coordinate::from(start.x, y), end, value);
         }
     }
 
-    fn line(&mut self, start: Coordinate, end: Coordinate, value: &dyn Fn(Option<&bool>) -> Option<bool>) {
+    fn line(&mut self, start: Coordinate, end: Coordinate, value: &dyn Fn(Option<&u32>) -> u32) {
         for x in start.x..=end.x {
             self.pos(Coordinate::from(x, start.y), value);
         }
     }
 
-    fn pos(&mut self, pos: Coordinate, value: &dyn Fn(Option<&bool>) -> Option<bool>) {
-        match value(self.lit.get(&pos)) {
-            None => self.lit.remove(&pos),
-            Some(_) => self.lit.insert(pos, true),
-        };
+    fn pos(&mut self, pos: Coordinate, value: &dyn Fn(Option<&u32>) -> u32) {
+        self.lit.insert(pos, value(self.lit.get(&pos)));
+    }
+
+    fn bright(&self) -> u32 {
+        let mut total: u32 = 0;
+
+        for key in self.lit.keys() {
+            total += self.lit.get(key).unwrap();
+        }
+
+        total
     }
 }
 
@@ -99,18 +116,24 @@ fn main() {
     fp.read_to_string(&mut lines)
         .expect("Can't read input file");
     
-    let mut lines: Vec<&str> = lines.split("\n").collect();
+    let lines: Vec<&str> = lines.split("\n").collect();
     let mut house = House::new();
 
     for line in lines {
         let (action, start, end) = parse(line).expect("Unexpected line format");
 
         match action {
-            Action::TurnOn => house.turn_on(start, end),
-            Action::TurnOff => house.turn_off(start, end),
-            Action::Toggle => house.toggle(start, end),
+            Action::TurnOn =>  {
+                house.turn_on(start, end);
+            },
+            Action::TurnOff => {
+                house.turn_off(start, end);
+            },
+            Action::Toggle =>  {
+                house.toggle(start, end);
+            },
         }
     }
 
-    println!("Lit lights: {}", house.lit.len());
+    println!("Total Bright: {}", house.bright());
 }
